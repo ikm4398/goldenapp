@@ -245,4 +245,6 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
-after_install = "goldenapp.attendance_report.create_attendance_query_report"
+# goldenapp/hooks.py
+
+after_install = "goldenapp.install.after_install_all"
