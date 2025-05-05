@@ -13,3 +13,9 @@ bench --site sitename install-app goldenapp
 ```
 
 ### Check in report Attendance report section
+# 1
+New Attendance Report
+# 2
+All Employee Attendance Summary Report
+# 3
+Each Employee Attendance Summary Report
