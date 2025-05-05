@@ -1,7 +1,5 @@
 ### Goldenapp
 
-a
-
 ### Installation
 
 You can install this app using the [bench](https://github.com/frappe/bench) CLI:
@@ -13,9 +11,9 @@ bench --site sitename install-app goldenapp
 ```
 
 ### Check in report Attendance report section
-# 1
+#### 1
 New Attendance Report
-# 2
+#### 2
 All Employee Attendance Summary Report
-# 3
+#### 3
 Each Employee Attendance Summary Report
