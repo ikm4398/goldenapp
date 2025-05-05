@@ -125,7 +125,19 @@ ORDER BY att.employee, att.attendance_date, att.in_time;
                     "default": to_date,
                     "reqd": 1
                 }
-            ]
+            ],
+            "columns": [
+        {"label": "Employee", "fieldname": "employee", "fieldtype": "Link", "options": "Employee", "width": 120},
+        {"label": "Employee Name", "fieldname": "employee_name", "fieldtype": "Data", "width": 150},
+        {"label": "Attendance Date", "fieldname": "attendance_date", "fieldtype": "Date", "width": 120},
+        {"label": "Day", "fieldname": "attendance_day", "fieldtype": "Data", "width": 100},
+        {"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 100},
+        {"label": "Shift", "fieldname": "shift", "fieldtype": "Data", "width": 100},
+        {"label": "In Time", "fieldname": "in_time", "fieldtype": "Datetime", "width": 150},
+        {"label": "Out Time", "fieldname": "out_time", "fieldtype": "Datetime", "width": 150},
+        {"label": "Working Hours", "fieldname": "working_hours", "fieldtype": "Float", "width": 130},
+        {"label": "Late Entry", "fieldname": "late_entry", "fieldtype": "Check", "width": 100}
+    ],
         })
         report.insert(ignore_permissions=True)
         frappe.db.commit()
