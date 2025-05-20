@@ -2,10 +2,10 @@ import frappe
 from frappe.utils import add_days, nowdate
 
 def create_employee_checkin_query_report():
-    if not frappe.db.exists("Report", "New Employee Checkin Report"):
+    if not frappe.db.exists("Report", "New Employee Attendance Report"):
         report = frappe.get_doc({
             "doctype": "Report",
-            "report_name": "New Employee Checkin Report",
+            "report_name": "New Employee Attendance Report",
             "ref_doctype": "Attendance",
             "report_type": "Query Report",
             "is_standard": "No",
