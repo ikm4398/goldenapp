@@ -16,6 +16,7 @@
   "leave_application",
   "column_break_jqvr",
   "attendance_date",
+  "day",
   "company",
   "department",
   "attendance_request",
@@ -37,17 +38,18 @@
   {
    "fieldname": "amended_from",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Amended From",
    "no_copy": 1,
    "options": "Attendance2",
    "print_hide": 1,
-   "read_only": 1,
-   "search_index": 1
+   "read_only": 1
   },
   {
    "fieldname": "employee",
    "fieldtype": "Link",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Employee",
    "options": "Employee",
    "reqd": 1,
@@ -63,21 +65,20 @@
   },
   {
    "depends_on": "working_hours",
-   "fetch_from": "employee.employee_name",
    "fieldname": "working_hours",
    "fieldtype": "Float",
    "label": "Working Hours",
+   "precision": "1",
    "read_only": 1
   },
   {
    "default": "Present",
-   "fetch_from": "employee.employee_name",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Status",
    "no_copy": 1,
-   "options": "\nPresent\nAbsent\nOn Leave\nHalf Day\nWork From Home",
+   "options": "Present\nAbsent\nOn Leave\nHalf Day\nWork From Home",
    "reqd": 1,
    "search_index": 1
   },
@@ -120,6 +121,7 @@
    "reqd": 1
   },
   {
+   "fetch_from": "employee.department",
    "fieldname": "department",
    "fieldtype": "Link",
    "label": "Department",
@@ -127,7 +129,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "employee.department",
    "fieldname": "attendance_request",
    "fieldtype": "Link",
    "label": "Attendance Request",
@@ -190,13 +191,18 @@
    "fieldname": "early_exit",
    "fieldtype": "Check",
    "label": "Early Exit"
+  },
+  {
+   "fieldname": "day",
+   "fieldtype": "Data",
+   "label": "Day"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-05-22 14:52:38.931195",
+ "modified": "2025-06-12 17:58:31.272824",
  "modified_by": "Administrator",
  "module": "Goldenapp",
  "name": "Attendance2",

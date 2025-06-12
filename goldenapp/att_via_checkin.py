@@ -12,7 +12,7 @@ def create_employee_checkin_query_report():
             "module": "Goldenapp",
             "add_total_row": 0,  # Disable automatic total row
             "query": """
-WITH RECURSIVE DateRange AS (
+            WITH RECURSIVE DateRange AS (
     SELECT %(from_date)s AS attendance_date
     UNION ALL
     SELECT DATE_ADD(attendance_date, INTERVAL 1 DAY)
@@ -91,7 +91,10 @@ PresentRecords AS (
         emp.employee_name,
         cp.attendance_date,
         DAYNAME(cp.attendance_date) AS attendance_day,
-        'Present' AS status,
+        CASE 
+            WHEN cp.in_time IS NULL AND cp.out_time IS NOT NULL THEN 'Present'
+            ELSE 'Present'
+        END AS status,
         cp.shift,
         cp.in_time,
         COALESCE(
@@ -236,7 +239,30 @@ AbsentRecords AS (
         emp.employee_name,
         dr.attendance_date,
         DAYNAME(dr.attendance_date) AS attendance_day,
-        'Absent' AS status,
+        CASE 
+            WHEN EXISTS (
+                SELECT 1
+                FROM CheckinRecords co
+                WHERE co.employee = emp.employee
+                  AND DATE(co.checkin_time) = dr.attendance_date
+                  AND co.log_type = 'OUT'
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM CheckinRecords ci
+                      WHERE ci.employee = emp.employee
+                        AND DATE(ci.checkin_time) = dr.attendance_date
+                        AND ci.log_type = 'IN'
+                  )
+                  AND EXISTS (
+                      SELECT 1
+                      FROM CheckinRecords ci
+                      WHERE ci.employee = emp.employee
+                        AND DATE(ci.checkin_time) = DATE_SUB(dr.attendance_date, INTERVAL 1 DAY)
+                        AND ci.log_type = 'IN'
+                  )
+            ) THEN 'Absent'
+            ELSE 'Absent'
+        END AS status,
         NULL AS shift,
         NULL AS in_time,
         NULL AS out_time,
