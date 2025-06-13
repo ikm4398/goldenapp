@@ -12,7 +12,7 @@ def create_employee_checkin_query_report():
             "module": "Goldenapp",
             "add_total_row": 0,  # Disable automatic total row
             "query": """
-            WITH RECURSIVE DateRange AS (
+WITH RECURSIVE DateRange AS (
     SELECT %(from_date)s AS attendance_date
     UNION ALL
     SELECT DATE_ADD(attendance_date, INTERVAL 1 DAY)
@@ -85,134 +85,67 @@ CheckinPairs AS (
             )
       )
 ),
+AdjustedCheckinPairs AS (
+    -- Pair IN with OUT as before
+    SELECT 
+        employee,
+        attendance_date,
+        in_time,
+        out_time,
+        shift,
+        shift_start,
+        CASE 
+            WHEN in_time IS NOT NULL AND out_time IS NULL THEN (
+                -- Look for an OUT time on the next day to pair with this IN
+                SELECT MIN(co.out_time)
+                FROM CheckinPairs co
+                WHERE co.employee = cp.employee
+                  AND co.in_time IS NULL
+                  AND co.out_time IS NOT NULL
+                  AND co.attendance_date = DATE_ADD(cp.attendance_date, INTERVAL 1 DAY)
+            )
+            ELSE out_time
+        END AS adjusted_out_time
+    FROM CheckinPairs cp
+    WHERE in_time IS NOT NULL
+),
+OrphanedOutRecords AS (
+    -- Identify OUT-only records that were paired with a previous day's IN
+    SELECT 
+        employee,
+        attendance_date,
+        NULL AS in_time,
+        out_time,
+        NULL AS shift,
+        NULL AS shift_start
+    FROM CheckinPairs cp
+    WHERE in_time IS NULL
+      AND out_time IS NOT NULL
+      AND EXISTS (
+          SELECT 1
+          FROM AdjustedCheckinPairs acp
+          WHERE acp.employee = cp.employee
+            AND acp.attendance_date = DATE_SUB(cp.attendance_date, INTERVAL 1 DAY)
+            AND acp.adjusted_out_time = cp.out_time
+      )
+),
 PresentRecords AS (
     SELECT
         cp.employee,
         emp.employee_name,
         cp.attendance_date,
         DAYNAME(cp.attendance_date) AS attendance_day,
-        CASE 
-            WHEN cp.in_time IS NULL AND cp.out_time IS NOT NULL THEN 'Present'
-            ELSE 'Present'
-        END AS status,
+        'Present' AS status,
         cp.shift,
         cp.in_time,
-        COALESCE(
-            CASE
-                WHEN cp.out_time IS NOT NULL THEN cp.out_time
-                WHEN cp.in_time IS NOT NULL 
-                AND TIME(cp.in_time) BETWEEN '05:00:00' AND '10:00:00' THEN (
-                    SELECT co.checkin_time
-                    FROM CheckinRecords co
-                    WHERE co.employee = cp.employee
-                      AND DATE(co.checkin_time) = cp.attendance_date
-                      AND co.log_type = 'OUT'
-                      AND co.checkin_time > cp.in_time
-                      AND TIME(co.checkin_time) BETWEEN '09:00:00' AND '15:00:00'
-                    LIMIT 1
-                )
-                WHEN cp.in_time IS NOT NULL 
-                AND TIME(cp.in_time) BETWEEN '12:00:00' AND '17:00:00' THEN (
-                    SELECT co.checkin_time
-                    FROM CheckinRecords co
-                    WHERE co.employee = cp.employee
-                      AND DATE(co.checkin_time) = cp.attendance_date
-                      AND co.log_type = 'OUT'
-                      AND co.checkin_time > cp.in_time
-                      AND TIME(co.checkin_time) BETWEEN '15:00:00' AND '21:00:00'
-                    LIMIT 1
-                )
-                WHEN cp.in_time IS NOT NULL 
-                AND TIME(cp.in_time) >= '18:00:00' THEN (
-                    SELECT co.checkin_time
-                    FROM CheckinRecords co
-                    WHERE co.employee = cp.employee
-                      AND DATE(co.checkin_time) = DATE_ADD(cp.attendance_date, INTERVAL 1 DAY)
-                      AND co.log_type = 'OUT'
-                      AND TIME(co.checkin_time) BETWEEN '06:00:00' AND '10:00:00'
-                    LIMIT 1
-                )
-                ELSE cp.out_time
-            END,
-            NULL
-        ) AS out_time,
+        cp.adjusted_out_time AS out_time,
         ROUND(
             CASE
-                WHEN cp.in_time IS NOT NULL AND COALESCE(
-                    CASE
-                        WHEN cp.out_time IS NOT NULL THEN cp.out_time
-                        WHEN TIME(cp.in_time) BETWEEN '05:00:00' AND '10:00:00' THEN (
-                            SELECT co.checkin_time
-                            FROM CheckinRecords co
-                            WHERE co.employee = cp.employee
-                              AND DATE(co.checkin_time) = cp.attendance_date
-                              AND co.log_type = 'OUT'
-                              AND co.checkin_time > cp.in_time
-                              AND TIME(co.checkin_time) BETWEEN '09:00:00' AND '15:00:00'
-                            LIMIT 1
-                        )
-                        WHEN TIME(cp.in_time) BETWEEN '12:00:00' AND '17:00:00' THEN (
-                            SELECT co.checkin_time
-                            FROM CheckinRecords co
-                            WHERE co.employee = cp.employee
-                              AND DATE(co.checkin_time) = cp.attendance_date
-                              AND co.log_type = 'OUT'
-                              AND co.checkin_time > cp.in_time
-                              AND TIME(co.checkin_time) BETWEEN '15:00:00' AND '21:00:00'
-                            LIMIT 1
-                        )
-                        WHEN TIME(cp.in_time) >= '18:00:00' THEN (
-                            SELECT co.checkin_time
-                            FROM CheckinRecords co
-                            WHERE co.employee = cp.employee
-                              AND DATE(co.checkin_time) = DATE_ADD(cp.attendance_date, INTERVAL 1 DAY)
-                              AND co.log_type = 'OUT'
-                              AND TIME(co.checkin_time) BETWEEN '06:00:00' AND '10:00:00'
-                            LIMIT 1
-                        )
-                        ELSE cp.out_time
-                    END,
-                    NULL
-                ) IS NOT NULL THEN
+                WHEN cp.in_time IS NOT NULL AND cp.adjusted_out_time IS NOT NULL THEN
                     TIMESTAMPDIFF(
                         SECOND,
                         cp.in_time,
-                        COALESCE(
-                            CASE
-                                WHEN cp.out_time IS NOT NULL THEN cp.out_time
-                                WHEN TIME(cp.in_time) BETWEEN '05:00:00' AND '10:00:00' THEN (
-                                    SELECT co.checkin_time
-                                    FROM CheckinRecords co
-                                    WHERE co.employee = cp.employee
-                                      AND DATE(co.checkin_time) = cp.attendance_date
-                                      AND co.log_type = 'OUT'
-                                      AND co.checkin_time > cp.in_time
-                                      AND TIME(co.checkin_time) BETWEEN '09:00:00' AND '15:00:00'
-                                    LIMIT 1
-                                )
-                                WHEN TIME(cp.in_time) BETWEEN '12:00:00' AND '17:00:00' THEN (
-                                    SELECT co.checkin_time
-                                    FROM CheckinRecords co
-                                    WHERE co.employee = cp.employee
-                                      AND DATE(co.checkin_time) = cp.attendance_date
-                                      AND co.log_type = 'OUT'
-                                      AND co.checkin_time > cp.in_time
-                                      AND TIME(co.checkin_time) BETWEEN '15:00:00' AND '21:00:00'
-                                    LIMIT 1
-                                )
-                                WHEN TIME(cp.in_time) >= '18:00:00' THEN (
-                                    SELECT co.checkin_time
-                                    FROM CheckinRecords co
-                                    WHERE co.employee = cp.employee
-                                      AND DATE(co.checkin_time) = DATE_ADD(cp.attendance_date, INTERVAL 1 DAY)
-                                      AND co.log_type = 'OUT'
-                                      AND TIME(co.checkin_time) BETWEEN '06:00:00' AND '10:00:00'
-                                    LIMIT 1
-                                )
-                                ELSE cp.out_time
-                            END,
-                            NULL
-                        )
+                        cp.adjusted_out_time
                     ) / 3600
                 ELSE 0
             END, 3
@@ -229,9 +162,9 @@ PresentRecords AS (
                  END
         END AS late_entry,
         0 AS is_total
-    FROM CheckinPairs cp
+    FROM AdjustedCheckinPairs cp
     LEFT JOIN `tabEmployee` emp ON cp.employee = emp.employee
-    WHERE cp.in_time IS NOT NULL OR cp.out_time IS NOT NULL
+    WHERE cp.in_time IS NOT NULL
 ),
 AbsentRecords AS (
     SELECT
@@ -239,30 +172,7 @@ AbsentRecords AS (
         emp.employee_name,
         dr.attendance_date,
         DAYNAME(dr.attendance_date) AS attendance_day,
-        CASE 
-            WHEN EXISTS (
-                SELECT 1
-                FROM CheckinRecords co
-                WHERE co.employee = emp.employee
-                  AND DATE(co.checkin_time) = dr.attendance_date
-                  AND co.log_type = 'OUT'
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM CheckinRecords ci
-                      WHERE ci.employee = emp.employee
-                        AND DATE(ci.checkin_time) = dr.attendance_date
-                        AND ci.log_type = 'IN'
-                  )
-                  AND EXISTS (
-                      SELECT 1
-                      FROM CheckinRecords ci
-                      WHERE ci.employee = emp.employee
-                        AND DATE(ci.checkin_time) = DATE_SUB(dr.attendance_date, INTERVAL 1 DAY)
-                        AND ci.log_type = 'IN'
-                  )
-            ) THEN 'Absent'
-            ELSE 'Absent'
-        END AS status,
+        'Absent' AS status,
         NULL AS shift,
         NULL AS in_time,
         NULL AS out_time,
@@ -271,11 +181,15 @@ AbsentRecords AS (
         0 AS is_total
     FROM DateRange dr
     CROSS JOIN `tabEmployee` emp
-    LEFT JOIN CheckinRecords ci
+    LEFT JOIN AdjustedCheckinPairs ci
         ON emp.employee = ci.employee
-        AND DATE(ci.checkin_time) = dr.attendance_date
+        AND ci.attendance_date = dr.attendance_date
+    LEFT JOIN OrphanedOutRecords oor
+        ON emp.employee = oor.employee
+        AND oor.attendance_date = dr.attendance_date
     WHERE (%(employee)s IS NULL OR emp.employee = %(employee)s)
       AND ci.employee IS NULL
+      AND (oor.employee IS NULL OR oor.out_time IS NOT NULL) -- Mark days with only OUT as Absent
     GROUP BY emp.employee, dr.attendance_date
 ),
 AllRecords AS (

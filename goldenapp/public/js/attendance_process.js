@@ -1,5 +1,5 @@
 // // // goldenapp/public/attendance_process.js
-// // frappe.listview_settings["Attendance2"] = {
+// // frappe.listview_settings["Employee Attendance"] = {
 // // 	onload: function (listview) {
 // // 		// Add from_date field
 // // 		listview.page.add_field({
@@ -46,7 +46,7 @@
 // // 	},
 // // };
 
-// frappe.listview_settings["Attendance2"] = {
+// frappe.listview_settings["Employee Attendance"] = {
 // 	onload: function (listview) {
 // 		listview.page.add_field({
 // 			fieldname: "from_date",
@@ -99,7 +99,7 @@
 // 		});
 // 	},
 // };
-frappe.listview_settings["Attendance2"] = {
+frappe.listview_settings["Employee Attendance"] = {
 	onload: function (listview) {
 		// Add from_date field
 		listview.page.add_field({

@@ -158,7 +158,7 @@
 #                 early_exit = 1 if (shift_details["shift_end"] - out_datetime).total_seconds() / 60 > 15 else 0
 
 #                 # Insert attendance record
-#                 attendance = frappe.new_doc("Attendance2")
+#                 attendance = frappe.new_doc("Employee Attendance")
 #                 attendance.employee = employee
 #                 attendance.employee_name = in_log["employee_name"]
 #                 attendance.attendance_date = attendance_date
@@ -196,7 +196,7 @@
 #                     early_exit = 1 if log["log_type"] == "OUT" and (shift_details["shift_end"] - log_time).total_seconds() / 60 > 15 else 0
 
 #                     # Insert attendance record
-#                     attendance = frappe.new_doc("Attendance2")
+#                     attendance = frappe.new_doc("Employee Attendance")
 #                     attendance.employee = employee
 #                     attendance.employee_name = log["employee_name"]
 #                     attendance.attendance_date = attendance_date
@@ -340,7 +340,7 @@ def fetch_employee_checkins(from_date, to_date):
 
 def process_checkins_background(from_date, to_date):
     try:
-        # Step 1: Fetch all check-ins in range
+        # Fetch all check-ins in range
         query = """
             SELECT name, employee, employee_name, log_type, time, day
             FROM `tabEmployee Checkin`
@@ -371,6 +371,7 @@ def process_checkins_background(from_date, to_date):
             paired_logs = []
             unpaired_logs = []
             used_timeframes = defaultdict(set)
+            last_unpaired_in = None
 
             if shift_count > 1:
                 for log in logs:
@@ -379,42 +380,52 @@ def process_checkins_background(from_date, to_date):
                     log_date = log_time.date()
 
                     if log["log_type"] == "IN":
-                        stack.append(log)
+                        if last_unpaired_in:
+                            unpaired_logs.append(last_unpaired_in)
+                        last_unpaired_in = log
                     elif log["log_type"] == "OUT":
-                        valid_pair_found = False
-                        for i, in_log in enumerate(stack):
-                            in_time = get_datetime(in_log["time"])
-                            in_hour = in_time.hour + in_time.minute / 60.0
-                            in_date = in_time.date()
+                        if last_unpaired_in:
+                            in_time = get_datetime(last_unpaired_in["time"])
                             out_time = log_time
-                            out_hour = out_time.hour + out_time.minute / 60.0
-
-                            if out_time <= in_time:
+                            if out_time > in_time:
+                                paired_logs.append((last_unpaired_in, log))
+                                last_unpaired_in = None
+                            else:
+                                unpaired_logs.append(log)
                                 continue
+                        else:
+                            valid_pair_found = False
+                            for i, in_log in enumerate(stack):
+                                in_time = get_datetime(in_log["time"])
+                                in_hour = in_time.hour + in_time.minute / 60.0
+                                out_time = log_time
+                                out_hour = out_time.hour + out_time.minute / 60.0
 
-                            timeframe = None
-                            if 5 <= in_hour <= 12 and out_time.date() == in_time.date() and 9 <= out_hour <= 22:
-                                timeframe = "morning"
-                            elif 12 <= in_hour <= 17 and out_time.date() == in_time.date() and 15 <= out_hour <= 22:
-                                timeframe = "evening"
-                            elif in_hour > 16 and out_time.date() == in_time.date() + timedelta(days=1) and 5 <= out_hour <= 15:
-                                timeframe = "night"
+                                if out_time <= in_time:
+                                    continue
 
-                            if timeframe and timeframe not in used_timeframes[in_date]:
-                                paired_logs.append((in_log, log))
-                                used_timeframes[in_date].add(timeframe)
-                                del stack[i]
-                                valid_pair_found = True
-                                break
+                                timeframe = None
+                                if 5 <= in_hour <= 12 and out_time.date() == in_time.date() and 9 <= out_hour <= 22:
+                                    timeframe = "morning"
+                                elif 12 <= in_hour <= 17 and out_time.date() == in_time.date() and 15 <= out_hour <= 22:
+                                    timeframe = "evening"
+                                elif in_hour > 16 and out_time.date() == in_time.date() + timedelta(days=1) and 5 <= out_hour <= 15:
+                                    timeframe = "night"
 
-                        if not valid_pair_found:
-                            unpaired_logs.append(log)
-                            frappe.log_error(f"Unpaired OUT log for {employee} at {log_time}", "Checkin Processing")
+                                if timeframe and timeframe not in used_timeframes[in_date]:
+                                    paired_logs.append((in_log, log))
+                                    used_timeframes[in_date].add(timeframe)
+                                    del stack[i]
+                                    valid_pair_found = True
+                                    break
 
-                unpaired_logs.extend(stack)
-                for in_log in stack:
-                    frappe.log_error(f"Unpaired IN log for {employee} at {in_log['time']}", "Checkin Processing")
+                            if not valid_pair_found:
+                                unpaired_logs.append(log)
 
+                if last_unpaired_in:
+                    unpaired_logs.append(last_unpaired_in)
+
+            # Similar adjustment for shift_count == 1 can be made
             elif shift_count == 1:
                 for log in logs:
                     log_time = get_datetime(log["time"])
@@ -422,38 +433,47 @@ def process_checkins_background(from_date, to_date):
                     log_date = log_time.date()
 
                     if log["log_type"] == "IN":
+                        if last_unpaired_in:
+                            unpaired_logs.append(last_unpaired_in)
                         if 8 <= log_hour <= 18:
-                            stack.append(log)
+                            last_unpaired_in = log
                         else:
                             unpaired_logs.append(log)
                             frappe.log_error(f"IN log outside 08:00–18:00 for {employee} at {log_time}", "Checkin Processing")
                     elif log["log_type"] == "OUT":
-                        valid_pair_found = False
-                        for i, in_log in enumerate(stack):
-                            in_time = get_datetime(in_log["time"])
-                            in_date = in_time.date()
+                        if last_unpaired_in:
+                            in_time = get_datetime(last_unpaired_in["time"])
                             out_time = log_time
+                            if out_time > in_time:
+                                paired_logs.append((last_unpaired_in, log))
+                                last_unpaired_in = None
+                            else:
+                                unpaired_logs.append(log)
+                                continue
+                        else:
+                            valid_pair_found = False
+                            for i, in_log in enumerate(stack):
+                                in_time = get_datetime(in_log["time"])
+                                if in_time < log_time <= in_time + timedelta(days=1):
+                                    if in_date not in used_timeframes:
+                                        paired_logs.append((in_log, log))
+                                        used_timeframes[in_date].add("single")
+                                        del stack[i]
+                                        valid_pair_found = True
+                                        break
 
-                            if in_time < out_time <= in_time + timedelta(days=1):
-                                if in_date not in used_timeframes:
-                                    paired_logs.append((in_log, log))
-                                    used_timeframes[in_date].add("single")
-                                    del stack[i]
-                                    valid_pair_found = True
-                                    break
-
-                        if not valid_pair_found:
-                            unpaired_logs.append(log)
-                            frappe.log_error(f"Unpaired OUT log for {employee} at {log_time}", "Checkin Processing")
+                            if not valid_pair_found:
+                                unpaired_logs.append(log)
 
                 unpaired_logs.extend(stack)
-                for in_log in stack:
-                    frappe.log_error(f"Unpaired IN log for {employee} at {in_log['time']}", "Checkin Processing")
+                if last_unpaired_in:
+                    unpaired_logs.append(last_unpaired_in)
 
             else:
                 frappe.log_error(f"No active shifts for {employee}", "Checkin Processing")
                 continue
 
+            # Process paired logs to create attendance records
             for in_log, out_log in paired_logs:
                 attendance_date = get_datetime(in_log["time"]).date()
                 checkin_datetime = get_datetime(in_log["time"])
@@ -468,7 +488,7 @@ def process_checkins_background(from_date, to_date):
                 late_entry = 1 if (checkin_datetime - shift_details["shift_start"]).total_seconds() / 60 > 15 else 0
                 early_exit = 1 if (shift_details["shift_end"] - out_datetime).total_seconds() / 60 > 15 else 0
 
-                attendance = frappe.new_doc("Attendance2")
+                attendance = frappe.new_doc("Employee Attendance")
                 attendance.employee = employee
                 attendance.employee_name = in_log["employee_name"]
                 attendance.attendance_date = attendance_date
@@ -484,6 +504,7 @@ def process_checkins_background(from_date, to_date):
                 attendance.insert(ignore_permissions=True)
                 attendance_created.append(attendance.name)
 
+            # Handle unpaired logs
             if shift_count >= 1:
                 for log in unpaired_logs:
                     log_time = get_datetime(log["time"])
@@ -500,7 +521,7 @@ def process_checkins_background(from_date, to_date):
                     late_entry = 1 if log["log_type"] == "IN" and (log_time - shift_details["shift_start"]).total_seconds() / 60 > 15 else 0
                     early_exit = 1 if log["log_type"] == "OUT" and (shift_details["shift_end"] - log_time).total_seconds() / 60 > 15 else 0
 
-                    attendance = frappe.new_doc("Attendance2")
+                    attendance = frappe.new_doc("Employee Attendance")
                     attendance.employee = employee
                     attendance.employee_name = log["employee_name"]
                     attendance.attendance_date = attendance_date

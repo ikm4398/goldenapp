@@ -1,4 +1,4 @@
-frappe.ui.form.on("Attendance2", {
+frappe.ui.form.on("Employee Attendance", {
 	refresh(frm) {
 		if (frm.doc.docstatus === 1) {
 			// 1 means submitted
