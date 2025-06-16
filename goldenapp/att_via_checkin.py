@@ -2,10 +2,10 @@ import frappe
 from frappe.utils import add_days, nowdate
 
 def create_employee_checkin_query_report():
-    if not frappe.db.exists("Report", "New Employee Checkin Report"):
+    if not frappe.db.exists("Report", "New Employee Attendance Report"):
         report = frappe.get_doc({
             "doctype": "Report",
-            "report_name": "New Employee Checkin Report",
+            "report_name": "New Employee Attendance Report",
             "ref_doctype": "Attendance",
             "report_type": "Query Report",
             "is_standard": "No",
@@ -322,7 +322,7 @@ ORDER BY is_total, attendance_date, employee;
                 {"label": "Late Entry", "fieldname": "late_entry", "fieldtype": "Check", "width": 130},
             ],
             "javascript": """
-frappe.query_reports["New Employee Checkin Report"] = {
+frappe.query_reports["New Employee Attendance Report"] = {
     "filters": [
         {
             "fieldname": "employee",
