@@ -12,7 +12,7 @@ def create_employee_checkin_query_report():
             "module": "Goldenapp",
             "add_total_row": 0,  # Disable automatic total row
             "query": """
-           
+-- Generate date range recursively between from_date and to_date
 WITH RECURSIVE DateRange AS (
     SELECT %(from_date)s AS attendance_date
     UNION ALL
@@ -21,7 +21,8 @@ WITH RECURSIVE DateRange AS (
     WHERE attendance_date < %(to_date)s
 ),
 
--- Fetch all check-in/out records within date range for each employee, including shift info
+-- Fetch check-in records within date range and optionally for a specific employee
+-- Assign row numbers to each IN/OUT log per day to help with pairing
 CheckinRecords AS (
     SELECT 
         ci.employee,
@@ -36,120 +37,50 @@ CheckinRecords AS (
       AND (%(employee)s IS NULL OR ci.employee = %(employee)s)
 ),
 
--- Get all valid and active shift assignments for employees
-ShiftAssignments AS (
-    SELECT 
-        sa.employee,
-        sa.shift_type,
-        sa.start_time,
-        sa.end_time,
-        sa.start_date
-    FROM `tabShift Assignment` sa
-    WHERE sa.status = 'Active'
-      AND sa.docstatus = 1
-      AND sa.start_date <= %(to_date)s
-      AND (%(employee)s IS NULL OR sa.employee = %(employee)s)
-),
-
--- Match each IN check-in with the closest shift based on time difference
-MatchedShifts AS (
-    SELECT 
-        ci.employee,
-        ci.checkin_time,
-        ci.attendance_date,
-        MIN(ABS(TIMESTAMPDIFF(MINUTE, 
-            CASE 
-                WHEN sa.end_time >= sa.start_time 
-                THEN CONCAT(ci.attendance_date, ' ', sa.start_time)
-                ELSE CONCAT(DATE_ADD(ci.attendance_date, INTERVAL 1 DAY), ' ', sa.end_time)
-            END,
-            ci.checkin_time
-        ))) AS min_time_diff,
-        MIN(sa.shift_type) AS shift_type,
-        MIN(
-            CASE 
-                WHEN sa.end_time >= sa.start_time 
-                THEN CONCAT(ci.attendance_date, ' ', sa.start_time)
-                ELSE CONCAT(ci.attendance_date, ' ', sa.start_time)
-            END
-        ) AS shift_start,
-        MIN(
-            CASE 
-                WHEN sa.end_time >= sa.start_time 
-                THEN CONCAT(ci.attendance_date, ' ', sa.end_time)
-                ELSE CONCAT(DATE_ADD(ci.attendance_date, INTERVAL 1 DAY), ' ', sa.end_time)
-            END
-        ) AS shift_end
-    FROM CheckinRecords ci
-    LEFT JOIN ShiftAssignments sa
-        ON sa.employee = ci.employee
-        AND sa.start_date <= ci.attendance_date
-        AND (
-            ci.checkin_time >= DATE_SUB(
-                CASE 
-                    WHEN sa.end_time >= sa.start_time 
-                    THEN CONCAT(ci.attendance_date, ' ', sa.start_time)
-                    ELSE CONCAT(ci.attendance_date, ' ', sa.start_time)
-                END, 
-                INTERVAL 120 MINUTE
-            )
-            AND ci.checkin_time <= 
-                CASE 
-                    WHEN sa.end_time >= sa.start_time 
-                    THEN CONCAT(ci.attendance_date, ' ', sa.end_time)
-                    ELSE CONCAT(DATE_ADD(ci.attendance_date, INTERVAL 1 DAY), ' ', sa.end_time)
-                END
-        )
-    WHERE ci.log_type = 'IN'
-    GROUP BY ci.employee, ci.checkin_time, ci.attendance_date
-),
-
--- Pair each IN check-in with the next valid OUT check-in (no other IN between)
+-- Pair IN records with the nearest OUT record, ensuring OUT is after IN
+-- Consider overnight OUT logs (between 6AM and 10AM next day)
+-- Avoid pairing if there's another IN between the IN and OUT
 PairedINOUT AS (
     SELECT 
-        ci.employee,
-        ci.attendance_date,
-        ci.checkin_time AS in_time,
-        ms.shift_type,
-        ms.shift_start,
-        ms.shift_end,
+        i.employee,
+        i.attendance_date,
+        i.checkin_time AS in_time,
+        i.shift,
+        i.shift_start,
         MIN(o.checkin_time) AS out_time
-    FROM CheckinRecords ci
+    FROM CheckinRecords i
     LEFT JOIN CheckinRecords o
-        ON o.employee = ci.employee
+        ON o.employee = i.employee
         AND o.log_type = 'OUT'
-        AND o.checkin_time > ci.checkin_time
+        AND o.checkin_time > i.checkin_time
         AND (
-            DATE(o.checkin_time) = ci.attendance_date
+            DATE(o.checkin_time) = i.attendance_date
             OR (
-                DATE(o.checkin_time) = DATE_ADD(ci.attendance_date, INTERVAL 1 DAY)
+                DATE(o.checkin_time) = DATE_ADD(i.attendance_date, INTERVAL 1 DAY)
                 AND TIME(o.checkin_time) BETWEEN '06:00:00' AND '10:00:00'
             )
         )
         AND NOT EXISTS (
+            -- Make sure there's no intermediate IN record between i and o
             SELECT 1
             FROM CheckinRecords i2
-            WHERE i2.employee = ci.employee
+            WHERE i2.employee = i.employee
               AND i2.log_type = 'IN'
-              AND i2.checkin_time > ci.checkin_time
+              AND i2.checkin_time > i.checkin_time
               AND i2.checkin_time < o.checkin_time
         )
-    LEFT JOIN MatchedShifts ms
-        ON ms.employee = ci.employee
-        AND ms.checkin_time = ci.checkin_time
-    WHERE ci.log_type = 'IN'
-    GROUP BY ci.employee, ci.checkin_time, ci.attendance_date, ms.shift_type, ms.shift_start, ms.shift_end
+    WHERE i.log_type = 'IN'
+    GROUP BY i.employee, i.checkin_time, i.attendance_date, i.shift, i.shift_start
 ),
 
--- Find all OUT entries that couldn’t be paired with any IN
+-- Identify OUT records that were not paired with any IN
 UnpairedOUT AS (
     SELECT 
         o.employee,
         o.attendance_date,
         NULL AS in_time,
-        NULL AS shift_type,
+        NULL AS shift,
         NULL AS shift_start,
-        NULL AS shift_end,
         o.checkin_time AS out_time
     FROM CheckinRecords o
     WHERE o.log_type = 'OUT'
@@ -161,16 +92,16 @@ UnpairedOUT AS (
       )
 ),
 
--- Combine Paired IN/OUT and unpaired OUTs
+-- Combine both valid IN/OUT pairs and unmatched OUTs into a single list
 CheckinPairs AS (
-    SELECT employee, attendance_date, in_time, shift_type, shift_start, shift_end, out_time
+    SELECT employee, attendance_date, in_time, shift, shift_start, out_time
     FROM PairedINOUT
     UNION ALL
-    SELECT employee, attendance_date, in_time, shift_type, shift_start, shift_end, out_time
+    SELECT employee, attendance_date, in_time, shift, shift_start, out_time
     FROM UnpairedOUT
 ),
 
--- Generate present records only when both in_time and out_time are available
+-- Prepare Present records based on CheckinPairs, calculate working hours, and flag late entries
 PresentRecords AS (
     SELECT
         cp.employee,
@@ -178,7 +109,7 @@ PresentRecords AS (
         cp.attendance_date,
         DAYNAME(cp.attendance_date) AS attendance_day,
         'Present' AS status,
-        cp.shift_type,
+        cp.shift,
         cp.in_time,
         cp.out_time,
         ROUND(
@@ -202,12 +133,10 @@ PresentRecords AS (
         0 AS is_total
     FROM CheckinPairs cp
     LEFT JOIN `tabEmployee` emp ON cp.employee = emp.employee
-    WHERE cp.in_time IS NOT NULL
-      AND cp.out_time IS NOT NULL
-      AND cp.attendance_date = DATE(cp.in_time)
+    WHERE cp.in_time IS NOT NULL OR cp.out_time IS NOT NULL
 ),
 
--- Employees with no IN records are considered absent
+-- Identify Absent records: employees with no check-in records on that date
 AbsentRecords AS (
     SELECT
         emp.employee,
@@ -215,7 +144,7 @@ AbsentRecords AS (
         dr.attendance_date,
         DAYNAME(dr.attendance_date) AS attendance_day,
         'Absent' AS status,
-        NULL AS shift_type,
+        NULL AS shift,
         NULL AS in_time,
         NULL AS out_time,
         0 AS working_hours,
@@ -223,46 +152,22 @@ AbsentRecords AS (
         0 AS is_total
     FROM DateRange dr
     CROSS JOIN `tabEmployee` emp
-    LEFT JOIN CheckinPairs cp
-        ON emp.employee = cp.employee
-        AND cp.attendance_date = dr.attendance_date
-        AND cp.in_time IS NOT NULL
+    LEFT JOIN CheckinRecords ci
+        ON emp.employee = ci.employee
+        AND ci.attendance_date = dr.attendance_date
     WHERE (%(employee)s IS NULL OR emp.employee = %(employee)s)
-      AND cp.employee IS NULL
+      AND ci.employee IS NULL
     GROUP BY emp.employee, dr.attendance_date
 ),
 
--- Unpaired OUT records that still need to be shown (with null IN)
-UnpairedOutRecords AS (
-    SELECT
-        uo.employee,
-        uo.attendance_date,
-        DAYNAME(uo.attendance_date) AS attendance_day,
-        'Present' AS status,
-        NULL AS shift_type,
-        NULL AS in_time,
-        uo.out_time,
-        0 AS working_hours,
-        0 AS late_entry,
-        0 AS is_total
-    FROM UnpairedOUT uo
-    LEFT JOIN PairedINOUT p
-        ON p.employee = uo.employee
-        AND p.out_time = uo.out_time
-    WHERE p.out_time IS NULL
-),
-
--- Combine all present/absent/unpaired records
+-- Combine all Present and Absent records into final set
 AllRecords AS (
     SELECT * FROM PresentRecords
     UNION
     SELECT * FROM AbsentRecords
-    UNION
-    SELECT employee, employee AS employee_name, attendance_date, attendance_day, status, shift_type, in_time, out_time, working_hours, late_entry, is_total
-    FROM UnpairedOutRecords
 ),
 
--- Add a grand total summary for working hours
+-- Compute grand total working hours for selected employee
 GrandTotal AS (
     SELECT 
         'Total' AS employee,
@@ -270,7 +175,7 @@ GrandTotal AS (
         NULL AS attendance_date,
         NULL AS attendance_day,
         NULL AS status,
-        NULL AS shift_type,
+        NULL AS shift,
         NULL AS in_time,
         NULL AS out_time,
         SUM(working_hours) AS working_hours,
@@ -280,12 +185,11 @@ GrandTotal AS (
     WHERE employee = %(employee)s
 )
 
--- Final output: daily records + total working hours
+-- Final result: all attendance records plus the total row
 SELECT * FROM AllRecords
 UNION
 SELECT * FROM GrandTotal
 ORDER BY is_total, attendance_date, employee;
-
 
             """,
             "filters": [
