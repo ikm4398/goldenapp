@@ -12,8 +12,7 @@ def create_employee_checkin_query_report():
             "module": "Goldenapp",
             "add_total_row": 0,  # Disable automatic total row
             "query": """
-           
-WITH RECURSIVE DateRange AS (
+    WITH RECURSIVE DateRange AS (
     SELECT %(from_date)s AS attendance_date
     UNION ALL
     SELECT DATE_ADD(attendance_date, INTERVAL 1 DAY)
@@ -170,7 +169,7 @@ CheckinPairs AS (
     FROM UnpairedOUT
 ),
 
--- Generate present records only when both in_time and out_time are available
+-- Generate present records when in_time is available (out_time may be null)
 PresentRecords AS (
     SELECT
         cp.employee,
@@ -189,21 +188,24 @@ PresentRecords AS (
             END, 3
         ) AS working_hours,
         CASE 
-            WHEN cp.shift_start IS NOT NULL 
-            THEN CASE 
-                    WHEN TIMESTAMPDIFF(MINUTE, cp.shift_start, cp.in_time) > 15 THEN 1 
-                    ELSE 0 
-                 END
-            ELSE CASE 
-                    WHEN cp.in_time > CONCAT(cp.attendance_date, ' ', '09:00:00') THEN 1 
-                    ELSE 0 
-                 END
+            WHEN cp.in_time IS NOT NULL THEN
+                CASE 
+                    WHEN cp.shift_start IS NOT NULL 
+                    THEN CASE 
+                            WHEN TIMESTAMPDIFF(MINUTE, cp.shift_start, cp.in_time) > 15 THEN 1 
+                            ELSE 0 
+                         END
+                    ELSE CASE 
+                            WHEN cp.in_time > CONCAT(cp.attendance_date, ' ', '09:00:00') THEN 1 
+                            ELSE 0 
+                         END
+                END
+            ELSE 0
         END AS late_entry,
         0 AS is_total
     FROM CheckinPairs cp
     LEFT JOIN `tabEmployee` emp ON cp.employee = emp.employee
     WHERE cp.in_time IS NOT NULL
-      AND cp.out_time IS NOT NULL
       AND cp.attendance_date = DATE(cp.in_time)
 ),
 
@@ -285,7 +287,6 @@ SELECT * FROM AllRecords
 UNION
 SELECT * FROM GrandTotal
 ORDER BY is_total, attendance_date, employee;
-
 
             """,
             "filters": [
