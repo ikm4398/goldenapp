@@ -41,7 +41,7 @@
    "ignore_user_permissions": 1,
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Attendance2",
+   "options": "Employee Attendance",
    "print_hide": 1,
    "read_only": 1
   },
@@ -198,11 +198,10 @@
    "label": "Day"
   }
  ],
- "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-12 17:58:31.272824",
+ "modified": "2025-06-17 12:51:40.625566",
  "modified_by": "Administrator",
  "module": "Goldenapp",
  "name": "Employee Attendance",
@@ -223,7 +222,6 @@
    "write": 1
   }
  ],
- "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []
