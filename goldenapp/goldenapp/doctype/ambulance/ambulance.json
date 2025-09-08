@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "format:GH-AMB-{YYYY}-{####}",
  "creation": "2024-11-18 12:57:08.316751",
@@ -84,7 +85,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-08 13:41:33.750094",
+ "modified": "2025-09-08 22:10:59.147851",
  "modified_by": "Administrator",
  "module": "Goldenapp",
  "name": "Ambulance",
@@ -104,6 +105,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []
