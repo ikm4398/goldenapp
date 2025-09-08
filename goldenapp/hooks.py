@@ -19,3 +19,14 @@ after_install = "goldenapp.install.after_install_all"
 
 # Fixed indentation (no indent, module-level)
 app_include_js = "/assets/goldenapp/js/attendance_process.js"
+# goldenapp/hooks.py
+app_include_js = [
+    "/assets/nepali_calendar/js/bs_converter.js",
+    "/assets/nepali_calendar/dist/bs_converter.iife.js",
+]
+
+jinja = {
+    "methods": [
+        "goldenapp.utils.ad_to_bs_with_time"
+    ]
+}

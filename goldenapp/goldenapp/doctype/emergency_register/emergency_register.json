@@ -1,0 +1,505 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GH-ER-REG-{YYYY}-{#####}",
+ "creation": "2025-07-11 12:07:51.671948",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_1gbj",
+  "patient",
+  "patient_name",
+  "address",
+  "phone_number",
+  "age",
+  "column_break_nafw",
+  "gendersex",
+  "ward_number",
+  "bed_number",
+  "ip_number",
+  "section_break_edxf",
+  "admission_date",
+  "section_break_mkhr",
+  "provisional_diagnosis",
+  "column_break_misp",
+  "final_diagnosis",
+  "section_break_mckg",
+  "on_duty_staff",
+  "on_duty_staff_name",
+  "discharge_by",
+  "discharge_by_name",
+  "column_break_sbtl",
+  "condition_at_discharge",
+  "section_break_qjdv",
+  "discharge_date",
+  "section_break_cpsg",
+  "remark",
+  "section_break_tlux",
+  "amended_from",
+  "tab_2_tab",
+  "vitals_section",
+  "blood_pressure",
+  "pulse",
+  "respiratory_rate",
+  "column_break_wpgy",
+  "body_temperature",
+  "spo2",
+  "on_examinations_section",
+  "gc",
+  "gcs",
+  "jalccod",
+  "chest",
+  "cvs",
+  "column_break_axsb",
+  "pa",
+  "cns",
+  "pupil_right",
+  "pupil_left",
+  "power_section",
+  "right_ul",
+  "left_ul",
+  "right_ll",
+  "left_ll",
+  "column_break_vkzz",
+  "neck_rigidity",
+  "chest_compression",
+  "pelvic_compression",
+  "spine",
+  "section_break_ytyg",
+  "investigations",
+  "column_break_ijze",
+  "rx",
+  "section_break_lmmi",
+  "patient_status",
+  "column_break_ydvt",
+  "on_duty_doctor_mo",
+  "on_duty_doctor_mo_name",
+  "consultant_doctor",
+  "consultant_doctorname",
+  "is_medical_legal_case_section",
+  "is_medical_legal_case",
+  "if_yes",
+  "brought_by",
+  "contact_number"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_1gbj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Emergency Register",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "patient",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Patient",
+   "options": "Patient",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "patient.patient_name",
+   "fieldname": "patient_name",
+   "fieldtype": "Data",
+   "label": "Patient Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "patient.addressz",
+   "fieldname": "address",
+   "fieldtype": "Data",
+   "label": "Address",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "patient.mobile",
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "Phone Number",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "patient.ages",
+   "fieldname": "age",
+   "fieldtype": "Data",
+   "label": "Age",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "patient.sex",
+   "fieldname": "gendersex",
+   "fieldtype": "Data",
+   "label": "Gender(Sex)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ward_number",
+   "fieldtype": "Data",
+   "label": "Ward Number"
+  },
+  {
+   "fieldname": "bed_number",
+   "fieldtype": "Data",
+   "label": "Bed Number"
+  },
+  {
+   "fieldname": "ip_number",
+   "fieldtype": "Data",
+   "label": "I.P. Number"
+  },
+  {
+   "fieldname": "section_break_mkhr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "admission_date",
+   "fieldtype": "Datetime",
+   "label": "Admission Date",
+   "options": "datetime.now"
+  },
+  {
+   "fieldname": "column_break_nafw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "discharge_date",
+   "fieldtype": "Datetime",
+   "label": "Discharge Date"
+  },
+  {
+   "fieldname": "provisional_diagnosis",
+   "fieldtype": "Small Text",
+   "label": "Provisional Diagnosis"
+  },
+  {
+   "fieldname": "final_diagnosis",
+   "fieldtype": "Small Text",
+   "label": "Final Diagnosis"
+  },
+  {
+   "fieldname": "on_duty_staff",
+   "fieldtype": "Link",
+   "label": "On Duty Staff",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "discharge_by",
+   "fieldtype": "Link",
+   "label": "Discharge By",
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fieldname": "condition_at_discharge",
+   "fieldtype": "Small Text",
+   "label": "Condition at Discharge"
+  },
+  {
+   "fieldname": "remark",
+   "fieldtype": "Text Editor",
+   "label": "Remark"
+  },
+  {
+   "fieldname": "section_break_tlux",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_cpsg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_edxf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_qjdv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_misp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_mckg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_sbtl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "on_duty_staff.employee_name",
+   "fieldname": "on_duty_staff_name",
+   "fieldtype": "Data",
+   "label": "On Duty Staff (Name)",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "discharge_by.practitioner_name",
+   "fieldname": "discharge_by_name",
+   "fieldtype": "Data",
+   "label": "Discharge By (Full Name)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tab_2_tab",
+   "fieldtype": "Tab Break",
+   "label": "EMERGENCY SERVICE"
+  },
+  {
+   "fieldname": "vitals_section",
+   "fieldtype": "Section Break",
+   "label": "Vitals"
+  },
+  {
+   "fieldname": "blood_pressure",
+   "fieldtype": "Data",
+   "label": "Blood Pressure"
+  },
+  {
+   "fieldname": "pulse",
+   "fieldtype": "Data",
+   "label": "Pulse"
+  },
+  {
+   "fieldname": "body_temperature",
+   "fieldtype": "Data",
+   "label": "Body Temperature"
+  },
+  {
+   "fieldname": "respiratory_rate",
+   "fieldtype": "Data",
+   "label": "Respiratory rate"
+  },
+  {
+   "fieldname": "column_break_wpgy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "spo2",
+   "fieldtype": "Data",
+   "label": "SpO2"
+  },
+  {
+   "fieldname": "on_examinations_section",
+   "fieldtype": "Section Break",
+   "label": "On Examinations"
+  },
+  {
+   "fieldname": "gc",
+   "fieldtype": "Data",
+   "label": "GC"
+  },
+  {
+   "fieldname": "gcs",
+   "fieldtype": "Data",
+   "label": "GCS"
+  },
+  {
+   "fieldname": "jalccod",
+   "fieldtype": "Data",
+   "label": "JALCCOD"
+  },
+  {
+   "fieldname": "chest",
+   "fieldtype": "Data",
+   "label": "Chest"
+  },
+  {
+   "fieldname": "cvs",
+   "fieldtype": "Data",
+   "label": "CVS"
+  },
+  {
+   "fieldname": "column_break_axsb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pa",
+   "fieldtype": "Data",
+   "label": "P/A"
+  },
+  {
+   "fieldname": "cns",
+   "fieldtype": "Data",
+   "label": "CNS"
+  },
+  {
+   "fieldname": "pupil_right",
+   "fieldtype": "Data",
+   "label": "Pupil Right"
+  },
+  {
+   "fieldname": "pupil_left",
+   "fieldtype": "Data",
+   "label": "Pupil Left"
+  },
+  {
+   "fieldname": "power_section",
+   "fieldtype": "Section Break",
+   "label": "Power"
+  },
+  {
+   "fieldname": "right_ul",
+   "fieldtype": "Data",
+   "label": "Right UL"
+  },
+  {
+   "fieldname": "left_ul",
+   "fieldtype": "Data",
+   "label": "Left UL"
+  },
+  {
+   "fieldname": "right_ll",
+   "fieldtype": "Data",
+   "label": "Right LL"
+  },
+  {
+   "fieldname": "left_ll",
+   "fieldtype": "Data",
+   "label": "Left LL"
+  },
+  {
+   "fieldname": "column_break_vkzz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "neck_rigidity",
+   "fieldtype": "Data",
+   "label": "Neck Rigidity"
+  },
+  {
+   "fieldname": "chest_compression",
+   "fieldtype": "Data",
+   "label": "Chest Compression"
+  },
+  {
+   "fieldname": "pelvic_compression",
+   "fieldtype": "Data",
+   "label": "Pelvic Compression"
+  },
+  {
+   "fieldname": "spine",
+   "fieldtype": "Data",
+   "label": "Spine"
+  },
+  {
+   "fieldname": "section_break_lmmi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "is_medical_legal_case_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "is_medical_legal_case",
+   "fieldtype": "Select",
+   "label": "Is Medical Legal Case",
+   "options": "YES\nNO"
+  },
+  {
+   "fieldname": "patient_status",
+   "fieldtype": "Select",
+   "label": "Patient Status",
+   "options": "ADMIT\nDOPR\nLAMA\nDAMA\nEXPIRE\nDISCHARGE\nREFER\nBD"
+  },
+  {
+   "fieldname": "if_yes",
+   "fieldtype": "Heading",
+   "label": "if yes"
+  },
+  {
+   "fieldname": "brought_by",
+   "fieldtype": "Data",
+   "label": "Brought By"
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Data",
+   "label": "Contact Number"
+  },
+  {
+   "fieldname": "section_break_ytyg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "investigations",
+   "fieldtype": "Small Text",
+   "label": "Investigations"
+  },
+  {
+   "fieldname": "column_break_ijze",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rx",
+   "fieldtype": "Small Text",
+   "label": "Rx"
+  },
+  {
+   "fieldname": "column_break_ydvt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "on_duty_doctor_mo",
+   "fieldtype": "Link",
+   "label": "On Duty Doctor(MO)",
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fetch_from": "on_duty_doctor_mo.practitioner_name",
+   "fieldname": "on_duty_doctor_mo_name",
+   "fieldtype": "Data",
+   "label": "On Duty Doctor(MO) Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "consultant_doctor",
+   "fieldtype": "Link",
+   "label": "Consultant Doctor",
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fetch_from": "consultant_doctor.practitioner_name",
+   "fieldname": "consultant_doctorname",
+   "fieldtype": "Data",
+   "label": "Consultant Doctor(Name)",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-08-01 16:30:21.961581",
+ "modified_by": "Administrator",
+ "module": "Goldenapp",
+ "name": "Emergency Register",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
