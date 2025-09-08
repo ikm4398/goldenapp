@@ -1,0 +1,43 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-02-19 11:13:32.971533",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "assigned_by",
+  "transfer_department",
+  "date"
+ ],
+ "fields": [
+  {
+   "fieldname": "assigned_by",
+   "fieldtype": "Data",
+   "label": "Assigned By"
+  },
+  {
+   "fieldname": "transfer_department",
+   "fieldtype": "Link",
+   "label": " Transfer Department ",
+   "options": "Department"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-09-08 13:44:38.225888",
+ "modified_by": "Administrator",
+ "module": "Goldenapp",
+ "name": "Department Transfer",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

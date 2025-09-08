@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:GH-AMB-{YYYY}-{####}",
+ "creation": "2024-11-18 12:57:08.316751",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "driver_name",
+  "driver_number",
+  "ambulance_license_number",
+  "column_break_qxik",
+  "ambulance_number",
+  "country",
+  "state_district",
+  "city",
+  "location"
+ ],
+ "fields": [
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Driver Name"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "driver_number",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Driver Number"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "ambulance_license_number",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Ambulance License Number"
+  },
+  {
+   "fieldname": "column_break_qxik",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ambulance_number",
+   "fieldtype": "Data",
+   "label": "Ambulance Number"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "state_district",
+   "fieldtype": "Select",
+   "label": "State/District"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "city",
+   "fieldtype": "Select",
+   "label": "City"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Address"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-09-08 13:41:33.750094",
+ "modified_by": "Administrator",
+ "module": "Goldenapp",
+ "name": "Ambulance",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
