@@ -63,7 +63,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-09-08 13:40:55.761858",
+ "modified": "2025-09-12 16:38:50.568883",
  "modified_by": "Administrator",
  "module": "Goldenapp",
  "name": "Ambulances Check",
@@ -82,6 +82,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "creation",
  "sort_order": "DESC",
  "states": []

@@ -12,18 +12,18 @@ EXTRA_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
-class UnitTestEmergencyRegister(UnitTestCase):
+class UnitTestAmbulancefaffaf(UnitTestCase):
 	"""
-	Unit tests for EmergencyRegister.
+	Unit tests for Ambulancefaffaf.
 	Use this class for testing individual functions and methods.
 	"""
 
 	pass
 
 
-class IntegrationTestEmergencyRegister(IntegrationTestCase):
+class IntegrationTestAmbulancefaffaf(IntegrationTestCase):
 	"""
-	Integration tests for EmergencyRegister.
+	Integration tests for Ambulancefaffaf.
 	Use this class for testing interactions between multiple components.
 	"""
 
