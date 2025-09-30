@@ -5,9 +5,7 @@ app_description = "a"
 app_email = "ik@gmail.com"
 app_license = "mit"
 
-# Apps
-
-after_install = "goldenapp.install.after_install_all"
+# # Apps
 
 # # Merge the two doc_events into one
 # doc_events = {
@@ -17,8 +15,6 @@ after_install = "goldenapp.install.after_install_all"
 #     }
 # }
 
-# Fixed indentation (no indent, module-level)
-app_include_js = "/assets/goldenapp/js/attendance_process.js"
 # goldenapp/hooks.py
 app_include_js = [
     "/assets/nepali_calendar/js/bs_converter.js",
