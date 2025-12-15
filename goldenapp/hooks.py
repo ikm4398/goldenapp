@@ -16,13 +16,3 @@ app_license = "mit"
 # }
 
 # goldenapp/hooks.py
-app_include_js = [
-    "/assets/nepali_calendar/js/bs_converter.js",
-    "/assets/nepali_calendar/dist/bs_converter.iife.js",
-]
-
-jinja = {
-    "methods": [
-        "goldenapp.utils.ad_to_bs_with_time"
-    ]
-}
