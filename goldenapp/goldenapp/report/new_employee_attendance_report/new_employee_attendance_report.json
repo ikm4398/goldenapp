@@ -1,0 +1,125 @@
+{
+ "add_total_row": 0,
+ "add_translate_data": 0,
+ "columns": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "width": 120
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "width": 150
+  },
+  {
+   "fieldname": "attendance_date",
+   "fieldtype": "Date",
+   "label": "Attendance Date",
+   "width": 120
+  },
+  {
+   "fieldname": "attendance_day",
+   "fieldtype": "Data",
+   "label": "Day",
+   "width": 100
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status",
+   "width": 100
+  },
+  {
+   "fieldname": "shift",
+   "fieldtype": "Data",
+   "label": "Shift",
+   "width": 100
+  },
+  {
+   "fieldname": "in_time",
+   "fieldtype": "Datetime",
+   "label": "In Time",
+   "width": 150
+  },
+  {
+   "fieldname": "out_time",
+   "fieldtype": "Datetime",
+   "label": "Out Time",
+   "width": 150
+  },
+  {
+   "fieldname": "working_hours",
+   "fieldtype": "Float",
+   "label": "Working Hours",
+   "width": 130
+  },
+  {
+   "fieldname": "late_entry",
+   "fieldtype": "Check",
+   "label": "Late Entry",
+   "width": 130
+  }
+ ],
+ "creation": "2025-06-16 23:05:38.096557",
+ "disabled": 1,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "mandatory": 1,
+   "options": "Employee",
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "mandatory": 1,
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "mandatory": 1,
+   "wildcard_filter": 0
+  }
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "javascript": "\nfrappe.query_reports[\"New Employee Attendance Report\"] = {\n    \"filters\": [\n        {\n            \"fieldname\": \"employee\",\n            \"label\": __(\"Employee\"),\n            \"fieldtype\": \"Link\",\n            \"options\": \"Employee\",\n            \"reqd\": 1\n        },\n        {\n            \"fieldname\": \"from_date\",\n            \"label\": __(\"From Date\"),\n            \"fieldtype\": \"Date\",\n            \"reqd\": 1\n        },\n        {\n            \"fieldname\": \"to_date\",\n            \"label\": __(\"To Date\"),\n            \"fieldtype\": \"Date\",\n            \"reqd\": 1\n        }\n    ],\n    \"onload\": function(report) {\n        report.page.add_inner_button(__(\"Refresh\"), function() {\n            let filters = report.get_values();\n            if (!filters.employee || !filters.from_date || !filters.to_date) {\n                frappe.msgprint(__(\"Please fill all mandatory fields: Employee, From Date, and To Date\"));\n                return;\n            }\n            report.refresh();\n        });\n        \n        // Override the default run button behavior\n        report.page.set_primary_action(__(\"Run\"), function() {\n            let filters = report.get_values();\n            if (!filters.employee || !filters.from_date || !filters.to_date) {\n                frappe.msgprint(__(\"Please fill all mandatory fields: Employee, From Date, and To Date\"));\n                return;\n            }\n            report.refresh();\n        });\n    },\n    \"formatter\": function(value, row, column, data, default_formatter) {\n        if (data && data.is_total === 1) {\n            return `<b>${default_formatter(value, row, column, data)}</b>`;\n        }\n        return default_formatter(value, row, column, data);\n    }\n}\n            ",
+ "letter_head": "Golden Hospital",
+ "letterhead": null,
+ "modified": "2025-11-02 12:21:37.868434",
+ "modified_by": "Administrator",
+ "module": "Goldenapp",
+ "name": "New Employee Attendance Report",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "WITH RECURSIVE DateRange AS (\r\n    SELECT %(from_date)s AS attendance_date\r\n    UNION ALL\r\n    SELECT DATE_ADD(attendance_date, INTERVAL 1 DAY)\r\n    FROM DateRange\r\n    WHERE attendance_date < %(to_date)s\r\n),\r\n\r\n-- Fetch all check-in/out records within date range for each employee, including shift info\r\nCheckinRecords AS (\r\n    SELECT \r\n        ci.employee,\r\n        DATE(ci.time) AS attendance_date,\r\n        ci.time AS checkin_time,\r\n        ci.log_type,\r\n        ci.shift,\r\n        ci.shift_start,\r\n        ROW_NUMBER() OVER (PARTITION BY ci.employee, DATE(ci.time), ci.log_type ORDER BY ci.time) AS rn\r\n    FROM `tabEmployee Checkin` ci\r\n    WHERE DATE(ci.time) BETWEEN %(from_date)s AND %(to_date)s\r\n      AND (%(employee)s IS NULL OR ci.employee = %(employee)s)\r\n),\r\n\r\n-- Get all valid and active shift assignments for employees\r\nShiftAssignments AS (\r\n    SELECT \r\n        sa.employee,\r\n        sa.shift_type,\r\n        sa.start_time,\r\n        sa.end_time,\r\n        sa.start_date\r\n    FROM `tabShift Assignment` sa\r\n    WHERE sa.status = 'Active'\r\n      AND sa.docstatus = 1\r\n      AND sa.start_date <= %(to_date)s\r\n      AND (%(employee)s IS NULL OR sa.employee = %(employee)s)\r\n),\r\n\r\n-- Match each IN check-in with the closest shift based on time difference\r\nMatchedShifts AS (\r\n    SELECT \r\n        ci.employee,\r\n        ci.checkin_time,\r\n        ci.attendance_date,\r\n        MIN(ABS(TIMESTAMPDIFF(MINUTE, \r\n            CASE \r\n                WHEN sa.end_time >= sa.start_time \r\n                THEN CONCAT(ci.attendance_date, ' ', sa.start_time)\r\n                ELSE CONCAT(DATE_ADD(ci.attendance_date, INTERVAL 1 DAY), ' ', sa.end_time)\r\n            END,\r\n            ci.checkin_time\r\n        ))) AS min_time_diff,\r\n        MIN(sa.shift_type) AS shift_type,\r\n        MIN(\r\n            CASE \r\n                WHEN sa.end_time >= sa.start_time \r\n                THEN CONCAT(ci.attendance_date, ' ', sa.start_time)\r\n                ELSE CONCAT(ci.attendance_date, ' ', sa.start_time)\r\n            END\r\n        ) AS shift_start,\r\n        MIN(\r\n            CASE \r\n                WHEN sa.end_time >= sa.start_time \r\n                THEN CONCAT(ci.attendance_date, ' ', sa.end_time)\r\n                ELSE CONCAT(DATE_ADD(ci.attendance_date, INTERVAL 1 DAY), ' ', sa.end_time)\r\n            END\r\n        ) AS shift_end\r\n    FROM CheckinRecords ci\r\n    LEFT JOIN ShiftAssignments sa\r\n        ON sa.employee = ci.employee\r\n        AND sa.start_date <= ci.attendance_date\r\n        AND (\r\n            ci.checkin_time >= DATE_SUB(\r\n                CASE \r\n                    WHEN sa.end_time >= sa.start_time \r\n                    THEN CONCAT(ci.attendance_date, ' ', sa.start_time)\r\n                    ELSE CONCAT(ci.attendance_date, ' ', sa.start_time)\r\n                END, \r\n                INTERVAL 120 MINUTE\r\n            )\r\n            AND ci.checkin_time <= \r\n                CASE \r\n                    WHEN sa.end_time >= sa.start_time \r\n                    THEN CONCAT(ci.attendance_date, ' ', sa.end_time)\r\n                    ELSE CONCAT(DATE_ADD(ci.attendance_date, INTERVAL 1 DAY), ' ', sa.end_time)\r\n                END\r\n        )\r\n    WHERE ci.log_type = 'IN'\r\n    GROUP BY ci.employee, ci.checkin_time, ci.attendance_date\r\n),\r\n\r\n-- Pair each IN check-in with the next valid OUT check-in (no other IN between), within 2 days\r\nPairedINOUT AS (\r\n    SELECT \r\n        ci.employee,\r\n        ci.attendance_date,\r\n        ci.checkin_time AS in_time,\r\n        ms.shift_type,\r\n        ms.shift_start,\r\n        ms.shift_end,\r\n        MIN(o.checkin_time) AS out_time\r\n    FROM CheckinRecords ci\r\n    LEFT JOIN CheckinRecords o\r\n        ON o.employee = ci.employee\r\n        AND o.log_type = 'OUT'\r\n        AND o.checkin_time > ci.checkin_time\r\n        AND o.checkin_time <= DATE_ADD(ci.checkin_time, INTERVAL 2 DAY) -- Limit OUT to within 2 days\r\n        AND (\r\n            DATE(o.checkin_time) = ci.attendance_date\r\n            OR (\r\n                DATE(o.checkin_time) = DATE_ADD(ci.attendance_date, INTERVAL 1 DAY)\r\n                AND TIME(o.checkin_time) BETWEEN '06:00:00' AND '10:00:00'\r\n            )\r\n        )\r\n        AND NOT EXISTS (\r\n            SELECT 1\r\n            FROM CheckinRecords i2\r\n            WHERE i2.employee = ci.employee\r\n              AND i2.log_type = 'IN'\r\n              AND i2.checkin_time > ci.checkin_time\r\n              AND i2.checkin_time < o.checkin_time\r\n        )\r\n    LEFT JOIN MatchedShifts ms\r\n        ON ms.employee = ci.employee\r\n        AND ms.checkin_time = ci.checkin_time\r\n    WHERE ci.log_type = 'IN'\r\n    GROUP BY ci.employee, ci.checkin_time, ci.attendance_date, ms.shift_type, ms.shift_start, ms.shift_end\r\n),\r\n\r\n-- Find all OUT entries that couldn\u2019t be paired with any IN\r\nUnpairedOUT AS (\r\n    SELECT \r\n        o.employee,\r\n        o.attendance_date,\r\n        NULL AS in_time,\r\n        NULL AS shift_type,\r\n        NULL AS shift_start,\r\n        NULL AS shift_end,\r\n        o.checkin_time AS out_time\r\n    FROM CheckinRecords o\r\n    WHERE o.log_type = 'OUT'\r\n      AND NOT EXISTS (\r\n          SELECT 1\r\n          FROM PairedINOUT p\r\n          WHERE p.employee = o.employee\r\n            AND p.out_time = o.checkin_time\r\n      )\r\n),\r\n\r\n-- Combine Paired IN/OUT and unpaired OUTs\r\nCheckinPairs AS (\r\n    SELECT employee, attendance_date, in_time, shift_type, shift_start, shift_end, out_time\r\n    FROM PairedINOUT\r\n    UNION ALL\r\n    SELECT employee, attendance_date, in_time, shift_type, shift_start, shift_end, out_time\r\n    FROM UnpairedOUT\r\n),\r\n\r\n-- Generate present records when in_time is available (out_time may be null)\r\nPresentRecords AS (\r\n    SELECT\r\n        cp.employee,\r\n        emp.employee_name,\r\n        cp.attendance_date,\r\n        DAYNAME(cp.attendance_date) AS attendance_day,\r\n        'Present' AS status,\r\n        cp.shift_type,\r\n        cp.in_time,\r\n        cp.out_time,\r\n        ROUND(\r\n            CASE\r\n                WHEN cp.in_time IS NOT NULL AND cp.out_time IS NOT NULL\r\n                AND cp.out_time <= DATE_ADD(cp.in_time, INTERVAL 2 DAY) -- Validate OUT time\r\n                THEN TIMESTAMPDIFF(SECOND, cp.in_time, cp.out_time) / 3600\r\n                ELSE 0\r\n            END, 3\r\n        ) AS working_hours,\r\n        CASE \r\n            WHEN cp.in_time IS NOT NULL THEN\r\n                CASE \r\n                    WHEN cp.shift_start IS NOT NULL \r\n                    THEN CASE \r\n                            WHEN TIMESTAMPDIFF(MINUTE, cp.shift_start, cp.in_time) > 15 THEN 1 \r\n                            ELSE 0 \r\n                         END\r\n                    ELSE CASE \r\n                            WHEN cp.in_time > CONCAT(cp.attendance_date, ' ', '09:00:00') THEN 1 \r\n                            ELSE 0 \r\n                         END\r\n                END\r\n            ELSE 0\r\n        END AS late_entry,\r\n        0 AS is_total\r\n    FROM CheckinPairs cp\r\n    LEFT JOIN `tabEmployee` emp ON cp.employee = emp.employee\r\n    WHERE cp.in_time IS NOT NULL\r\n      AND cp.attendance_date = DATE(cp.in_time)\r\n),\r\n\r\n-- Employees with no IN records and no unpaired OUT records are considered absent\r\nAbsentRecords AS (\r\n    SELECT\r\n        emp.employee,\r\n        emp.employee_name,\r\n        dr.attendance_date,\r\n        DAYNAME(dr.attendance_date) AS attendance_day,\r\n        'Absent' AS status,\r\n        NULL AS shift_type,\r\n        NULL AS in_time,\r\n        NULL AS out_time,\r\n        0 AS working_hours,\r\n        0 AS late_entry,\r\n        0 AS is_total\r\n    FROM DateRange dr\r\n    CROSS JOIN `tabEmployee` emp\r\n    LEFT JOIN CheckinPairs cp\r\n        ON emp.employee = cp.employee\r\n        AND cp.attendance_date = dr.attendance_date\r\n        AND cp.in_time IS NOT NULL\r\n    LEFT JOIN UnpairedOUT uo\r\n        ON emp.employee = uo.employee\r\n        AND uo.attendance_date = dr.attendance_date\r\n    WHERE (%(employee)s IS NULL OR emp.employee = %(employee)s)\r\n      AND cp.employee IS NULL\r\n      AND uo.employee IS NULL -- Exclude days with unpaired OUTs\r\n    GROUP BY emp.employee, dr.attendance_date\r\n),\r\n\r\n-- Unpaired OUT records marked as Present\r\nUnpairedOutRecords AS (\r\n    SELECT\r\n        uo.employee,\r\n        emp.employee_name, -- Join with tabEmployee for correct name\r\n        uo.attendance_date,\r\n        DAYNAME(uo.attendance_date) AS attendance_day,\r\n        'Present' AS status, -- Per Requirement 1: Only OUT marked as Present\r\n        NULL AS shift_type,\r\n        NULL AS in_time,\r\n        uo.out_time,\r\n        0 AS working_hours,\r\n        0 AS late_entry,\r\n        0 AS is_total\r\n    FROM UnpairedOUT uo\r\n    LEFT JOIN `tabEmployee` emp ON uo.employee = emp.employee\r\n),\r\n\r\n-- Combine all present/absent/unpaired records\r\nAllRecords AS (\r\n    SELECT * FROM PresentRecords\r\n    UNION\r\n    SELECT * FROM AbsentRecords\r\n    UNION\r\n    SELECT * FROM UnpairedOutRecords\r\n),\r\n\r\n-- Add a grand total summary for working hours\r\nGrandTotal AS (\r\n    SELECT \r\n        'Total' AS employee,\r\n        NULL AS employee_name,\r\n        NULL AS attendance_date,\r\n        NULL AS attendance_day,\r\n        NULL AS status,\r\n        NULL AS shift_type,\r\n        NULL AS in_time,\r\n        NULL AS out_time,\r\n        SUM(working_hours) AS working_hours,\r\n        NULL AS late_entry,\r\n        1 AS is_total\r\n    FROM AllRecords\r\n    WHERE employee = %(employee)s\r\n)\r\n\r\n-- Final output: daily records + total working hours(indra)\r\nSELECT * FROM AllRecords\r\nUNION\r\nSELECT * FROM GrandTotal\r\nORDER BY is_total, attendance_date, employee;",
+ "ref_doctype": "Attendance",
+ "report_name": "New Employee Attendance Report",
+ "report_type": "Query Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "HR User"
+  },
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "Employee"
+  }
+ ],
+ "timeout": 0
+}
